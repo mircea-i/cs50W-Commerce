@@ -1,0 +1,51 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+
+    <h2>Current listing</h2>
+    <br>
+    
+    <h4>{{ name }} listed by {{ owner }} on {{ creation }}</h4>
+    <hr>
+    <h2>Description</h2>
+    <br>
+    {{ description }}
+    {% if image %}
+        <img src={{ image }}>
+    {% else %}
+        <img src="../static/auctions/noimg.jpg">                  
+    {% endif %}
+
+    <hr>
+    {% if user == owner %}
+    <form method="post" action="{% url 'end_listing' id %}">
+        {% csrf_token %}
+        <input class="btn btn-primary" type="submit" value="End listing">
+    </form>
+
+    {% elif watched == False %}
+    <form method="post" action="{% url 'watchlist_add' id %}">
+        {% csrf_token %}
+        <input class="btn btn-primary" type="submit" value="Add to watchlist">
+    </form>
+    
+    {% else %}
+    <form method="post" action="{% url 'watchlist_remove' id %}">
+        {% csrf_token %}
+        <input class="btn btn-primary" type="submit" value="Remove from watchlist">
+    </form>
+    {% endif %}
+
+    <hr>
+    <form class="form-inline" method="post" action="{% url 'post_comment' id %}">
+        {% csrf_token %}
+        <input class="form-control col-md-6" type="texarea"  name="comment">
+        <input class="btn btn-primary" type="submit" value="Submit comment">
+    </form>
+    
+    <hr>
+    <ul>
+    {% for comment in comments %}
+    <li><h5>{{ comment }}</li></h5>
+    {% endfor %}
+{% endblock %}

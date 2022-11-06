@@ -1,0 +1,15 @@
+body {
+    padding: 10px;
+}
+
+tr:hover {
+    background-color: azure;
+
+}
+
+
+
+img {
+    max-width: 200px;
+    max-height: 200px;
+}

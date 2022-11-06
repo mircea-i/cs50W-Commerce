@@ -1,0 +1,52 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+
+    {% if listings %}
+        
+    <h2>Active Listings</h2>
+    <br>
+        
+    <table class="table">
+        <thead class="thead-dark">
+            <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th>Photo</th>
+                <th>Current price</th>
+            <tr>
+        </thead>
+        
+        {% for listing in listings %}
+            
+        <tr>
+            {% if user.is_authenticated %}
+            <td><a href="{% url 'view_listing' listing.id %}">{{ listing.name }}</a></td>
+            {% else %}
+            <td>{{ listing.name }}</td>
+            {% endif %}
+            <td>{{ listing.description }}</td>
+            <td>
+          
+                {% if listing.image %}
+                    <img src={{ listing.image }}>
+                {% else %}
+                    <img src="./static/auctions/noimg.jpg">
+                    
+                {% endif %}
+            </td>
+            <td>{{ listing.starting_bid }}</td>
+            
+        </tr>
+            
+        {% endfor %}
+        
+    </table>
+    
+    {% else %}
+
+        <h2>Nothing here</h2>
+
+    {% endif %}
+
+{% endblock %}
