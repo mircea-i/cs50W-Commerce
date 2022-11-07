@@ -95,30 +95,58 @@ def create(request):
         return render(request, "auctions/create.html", {'form':ListingForm()}) 
 
 
-@login_required
 def view_listing(request, id):
 
     if request.method == "POST":
         pass
-    
+    # Get the listing for the current id
     listing = Listing.objects.get(pk=id)
-    user = request.user
-    comments = Comment.objects.filter(listing=listing)
-    watched = False
-    if listing in Listing.objects.filter(pk__in=(Watchlist.objects.filter(user=request.user).values_list('listing')), is_active=True):
-        watched = True 
-    
-    return render(request, "auctions/view_listing.html", {
-        'name': listing.name,
-        'owner': listing.owner,
-        'creation': listing.creation,
-        'description': listing.description,
-        'image': listing.image,
-        'id': id,
-        'user': user,
-        'comments': comments,
-        'watched': watched
-    })
+
+    # Get the current bid for the listing (if existing), the starting bid otherwise
+    if listing in Listing.objects.filter(pk__in=(Bid.objects.filter(listing=listing).values_list('listing'))):
+            bid = Bid.objects.get(listing=listing)
+            current_bid = bid.bid
+    else:
+            current_bid = listing.starting_bid
+
+    # Do all the magic if the user is not Anonymous
+    if request.user.is_authenticated:
+        
+        user = request.user
+        comments = Comment.objects.filter(listing=listing)
+        watched = False
+
+        # Check if current listing is being watched by the logged in user in order to pass it to the template
+        if listing in Listing.objects.filter(pk__in=(Watchlist.objects.filter(user=request.user).values_list('listing')), is_active=True):
+            watched = True 
+        
+        # Render the template with all the information
+        return render(request, "auctions/view_listing.html", {
+            'name': listing.name,
+            'owner': listing.owner,
+            'creation': listing.creation,
+            'description': listing.description,
+            'image': listing.image,
+            'id': id,
+            'user': user,
+            'comments': comments,
+            'watched': watched,
+            'bid': current_bid
+        })
+
+    # If the user is not logged in
+    else:
+
+        # Return the template with limited information
+        return render(request, "auctions/view_listing.html", {
+            'name': listing.name,
+            'owner': listing.owner,
+            'creation': listing.creation,
+            'description': listing.description,
+            'image': listing.image,
+            'id': id,
+            'bid': current_bid
+        })
 
 
 @login_required
@@ -147,10 +175,11 @@ def end_listing(request, id):
     else:
         return redirect(reverse("index"))
 
+
 @login_required
 def post_comment(request, id):
     
-    # Getting here via form submit
+    # Getting here via comment form submit
     if request.method == "POST":
         listing = Listing.objects.get(pk=id)
         comment = request.POST['comment']
@@ -176,7 +205,7 @@ def watchlist_add(request, id):
     # Add current viewed listing to watchlist
     if request.method == "POST":
         listing = Listing.objects.get(pk=id)
-        Watchlist.objects.create(listing=listing, user = request.user)
+        Watchlist.objects.create(listing=listing, user=request.user)
         return view_listing(request, id)
     
     # If feeling funky redirect back to auctions list
@@ -195,3 +224,36 @@ def watchlist_remove(request, id):
     # If feeling funky redirect back to auctions list
     else:
         return redirect(reverse("index"))
+
+
+@login_required
+def bid(request, id):
+
+    if request.method == "POST":
+        listing = Listing.objects.get(pk=id)
+        posted_bid = request.POST['bid']
+
+        try:
+            posted_bid = float(posted_bid)
+        except ValueError:
+            return render(request, "auctions/error.html", {'error': 'Invalid bid, please place a valid bid!'})
+
+        if listing in Listing.objects.filter(pk__in=(Bid.objects.filter(listing=listing).values_list('listing'))):
+            bid = Bid.objects.get(listing=listing)
+            if posted_bid > bid.bid:
+                bid.bid = posted_bid
+                bid.bidder = request.user
+                bid.save()
+                return view_listing(request, id)
+            else:
+                return render(request, "auctions/error.html", {'error': 'Bid value too low, please place a higher bid!'})
+        else:
+            if posted_bid > listing.starting_bid:
+                Bid.objects.create(
+                    listing = listing,
+                    bidder = request.user,
+                    bid = posted_bid
+                )
+                return view_listing(request, id)
+            else:
+                return render(request, "auctions/error.html", {'error': 'Bid value too low, please place a higher bid!'})

@@ -23,6 +23,8 @@ class Bid(models.Model):
     listing = models.ForeignKey(Listing, on_delete=models.CASCADE)
     bidder = models.ForeignKey(User, on_delete=models.CASCADE)
     bid = models.FloatField(validators=[MinValueValidator(1)])
+    def __str__(self):
+        return f"{self.listing.name} current bid {self.bid} by {self.bidder.username}"
 
 
 class Comment(models.Model):
