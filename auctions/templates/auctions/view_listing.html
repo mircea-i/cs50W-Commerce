@@ -25,6 +25,8 @@
 
     <hr>
 
+{% if is_active == True %}
+
     {% if user.is_authenticated %}
         
         {% if user == owner %}
@@ -67,6 +69,12 @@
     
     {% endif %}
 
+    {% else %}
+
+    {% if won == True%}
+    <h4>You have won this listing for {{ bid }}</h4>
+    {% endif %}
+{% endif %}
     
     <hr>
     <ul>

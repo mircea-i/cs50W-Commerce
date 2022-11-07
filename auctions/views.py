@@ -12,7 +12,7 @@ from .forms import ListingForm
 
 def index(request):
     return render(request, "auctions/index.html", {
-        'listings': Listing.objects.filter(is_active=True)
+        'listings': Listing.objects.all()
     })
 
 
@@ -82,7 +82,7 @@ def create(request):
                 description = form.cleaned_data['description'],
                 creation = timezone.now(),
                 image = form.cleaned_data['image'],
-                starting_bid = form.cleaned_data['starting_bid'],
+                price = form.cleaned_data['starting_bid'],
                 owner = request.user,
                 is_active = "True"
                 )
@@ -107,18 +107,24 @@ def view_listing(request, id):
             bid = Bid.objects.get(listing=listing)
             current_bid = bid.bid
     else:
-            current_bid = listing.starting_bid
+            current_bid = listing.price
 
     # Do all the magic if the user is not Anonymous
     if request.user.is_authenticated:
         
         user = request.user
         comments = Comment.objects.filter(listing=listing)
-        watched = False
+        
 
         # Check if current listing is being watched by the logged in user in order to pass it to the template
+        watched = False
         if listing in Listing.objects.filter(pk__in=(Watchlist.objects.filter(user=request.user).values_list('listing')), is_active=True):
-            watched = True 
+            watched = True
+
+        # Check if current listing has ended and user is highest bidder
+        won = False
+        if listing in Listing.objects.filter(pk__in=(Bid.objects.filter(bidder=request.user).values_list('listing')), is_active=False):
+            won = True
         
         # Render the template with all the information
         return render(request, "auctions/view_listing.html", {
@@ -127,10 +133,12 @@ def view_listing(request, id):
             'creation': listing.creation,
             'description': listing.description,
             'image': listing.image,
+            'is_active': listing.is_active,
             'id': id,
             'user': user,
             'comments': comments,
             'watched': watched,
+            'won': won,
             'bid': current_bid
         })
 
@@ -244,16 +252,24 @@ def bid(request, id):
                 bid.bid = posted_bid
                 bid.bidder = request.user
                 bid.save()
+                listing.price = posted_bid
+                listing.save()
                 return view_listing(request, id)
             else:
                 return render(request, "auctions/error.html", {'error': 'Bid value too low, please place a higher bid!'})
         else:
-            if posted_bid > listing.starting_bid:
+            if posted_bid > listing.price:
                 Bid.objects.create(
                     listing = listing,
                     bidder = request.user,
                     bid = posted_bid
                 )
+                listing.price = posted_bid
+                listing.save()
                 return view_listing(request, id)
             else:
                 return render(request, "auctions/error.html", {'error': 'Bid value too low, please place a higher bid!'})
+
+
+def categories(request):
+    pass

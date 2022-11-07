@@ -14,6 +14,7 @@
                 <th>Description</th>
                 <th>Photo</th>
                 <th>Current price</th>
+                <th>Status<th>
             <tr>
         </thead>
         
@@ -32,7 +33,14 @@
                 {% endif %}
             </td>
             
-            <td>{{ listing.starting_bid }}</td>
+            <td>{{ listing.price }}</td>
+
+            <td>
+                {% if listing.is_active == True%}
+                    Active
+                {% else %}
+                    Ended
+                {% endif %}
             
         </tr>
             

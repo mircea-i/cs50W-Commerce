@@ -13,9 +13,10 @@ class Listing(models.Model):
     description = models.TextField(max_length=1024, validators=[MinLengthValidator(1)])
     creation = models.DateTimeField(default=timezone.now())
     image = models.URLField(max_length=200, blank=True)
-    starting_bid = models.FloatField(validators=[MinValueValidator(1)])
+    price = models.FloatField(validators=[MinValueValidator(1)])
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     is_active = models.BooleanField(default=True)
+
     def __str__(self):
         return f"{self.name} at {self.starting_bid} by {self.owner}"
 
@@ -39,3 +40,4 @@ class Watchlist(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     def __str__(self):
         return f"{self.listing} watched by {self.user}"
+
