@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import User, Listing, Bid, Comment, Watchlist
+from .models import User, Listing, Bid, Comment, Watchlist, Category
 from .forms import ListingForm
 
 
@@ -80,6 +80,7 @@ def create(request):
             Listing.objects.create(
                 name = form.cleaned_data['name'],
                 description = form.cleaned_data['description'],
+                category = form.cleaned_data['category'],
                 creation = timezone.now(),
                 image = form.cleaned_data['image'],
                 price = form.cleaned_data['price'],
@@ -153,7 +154,8 @@ def view_listing(request, id):
 def watchlist(request):
 
     # Query active listings against the current user's watchlist
-    watchlist = Listing.objects.filter(is_active=True, id__in=Watchlist.objects.filter(user=request.user))
+    watchlist = Listing.objects.filter(is_active=True, id__in=(Watchlist.objects.filter(user=request.user).values_list('listing')))
+
     return render(request, "auctions/watchlist.html", {'listings': watchlist})
 
 
@@ -254,4 +256,11 @@ def bid(request, id):
 
 
 def categories(request):
-    pass
+    return render(request, "auctions/categories.html", {
+        'categories': Category.objects.all()})
+
+def category(request, name):
+    return render(request, "auctions/category.html", {
+        'listings': Listing.objects.filter(category=Category.objects.get(name=name)),
+        'category':name
+    })

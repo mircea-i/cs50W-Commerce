@@ -4,44 +4,40 @@
 
     {% if listings %}
         
-    <h2>Active Listings</h2>
-    <br>
-        
-    <table class="table">
-        <thead class="thead-dark">
-            <tr>
-                <th>Item</th>
-                <th>Description</th>
-                <th>Photo</th>
-                <th>Current price</th>
-                <th>Status<th>
-            <tr>
-        </thead>
+        <h2>Listings in {{ category }}</h2>
+
+        <br>
+            
+        <table class="table">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Photo</th>
+                    <th>Current bid</th>
+                    <th>Status<th>
+                <tr>
+            </thead>
         
         {% for listing in listings %}
             
-        <tr>
-            
+        <tr>    
             <td class="align-middle"><a href="{% url 'view_listing' listing.id %}">{{ listing.name }}</a></td>
             <td class="align-middle">{{ listing.description }}</td>
-            
             <td class="align-middle">
                 {% if listing.image %}
                     <img src={{ listing.image }}>
                 {% else %}
-                    <img src="./static/auctions/noimg.jpg">          
+                    <img src="../static/auctions/noimg.jpg">          
                 {% endif %}
             </td>
-            
             <td class="align-middle">{{ listing.price }}</td>
-
             <td class="align-middle">
-                {% if listing.is_active == True%}
+                {% if listing.is_active == True %}
                     Active
                 {% else %}
                     Ended
                 {% endif %}
-            
         </tr>
             
         {% endfor %}

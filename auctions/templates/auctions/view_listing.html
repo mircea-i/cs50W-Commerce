@@ -3,16 +3,11 @@
 {% block body %}
 
     <h2>Current listing</h2>
-
     <br>
-    
     <h4>{{ name }} listed by {{ owner }} on {{ creation }}</h4>
     <h4>Current bid is {{ bid }}</h4>
-
     <hr>
-
     <h2>Description</h2>
-
     <br>
 
     {{ description }}
@@ -38,13 +33,13 @@
         {% elif watched == False %}
             <form method="post" action="{% url 'watchlist_add' id %}">
                 {% csrf_token %}
-                <input class="btn btn-primary" type="submit" value="Add to watchlist">
+                <input class="btn btn-primary" type="submit" value="Add to watchlist" name="watchlist_add">
             </form>
     
         {% else %}
             <form method="post" action="{% url 'watchlist_remove' id %}">
                 {% csrf_token %}
-                <input class="btn btn-primary" type="submit" value="Remove from watchlist">
+                <input class="btn btn-primary" type="submit" value="Remove from watchlist" name="watchlist_remove">
             </form>
         {% endif %}
 
