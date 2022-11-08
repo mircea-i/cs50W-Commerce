@@ -1,7 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -82,7 +82,7 @@ def create(request):
                 description = form.cleaned_data['description'],
                 creation = timezone.now(),
                 image = form.cleaned_data['image'],
-                price = form.cleaned_data['starting_bid'],
+                price = form.cleaned_data['price'],
                 owner = request.user,
                 is_active = "True"
                 )
@@ -97,33 +97,25 @@ def create(request):
 
 def view_listing(request, id):
 
-    if request.method == "POST":
-        pass
     # Get the listing for the current id
     listing = Listing.objects.get(pk=id)
-
-    # Get the current bid for the listing (if existing), the starting bid otherwise
-    if listing in Listing.objects.filter(pk__in=(Bid.objects.filter(listing=listing).values_list('listing'))):
-            bid = Bid.objects.get(listing=listing)
-            current_bid = bid.bid
-    else:
-            current_bid = listing.price
 
     # Do all the magic if the user is not Anonymous
     if request.user.is_authenticated:
         
+        # Get the current user and the comments for the listing
         user = request.user
         comments = Comment.objects.filter(listing=listing)
         
 
         # Check if current listing is being watched by the logged in user in order to pass it to the template
         watched = False
-        if listing in Listing.objects.filter(pk__in=(Watchlist.objects.filter(user=request.user).values_list('listing')), is_active=True):
+        if Watchlist.objects.filter(listing=listing, user=request.user):
             watched = True
 
         # Check if current listing has ended and user is highest bidder
         won = False
-        if listing in Listing.objects.filter(pk__in=(Bid.objects.filter(bidder=request.user).values_list('listing')), is_active=False):
+        if listing.is_active != True and Bid.objects.filter(listing=listing, bidder=request.user):
             won = True
         
         # Render the template with all the information
@@ -139,7 +131,7 @@ def view_listing(request, id):
             'comments': comments,
             'watched': watched,
             'won': won,
-            'bid': current_bid
+            'bid': listing.price
         })
 
     # If the user is not logged in
@@ -153,15 +145,15 @@ def view_listing(request, id):
             'description': listing.description,
             'image': listing.image,
             'id': id,
-            'bid': current_bid
+            'bid': listing.price
         })
 
 
 @login_required
 def watchlist(request):
 
-    # Query active listings agains the current user's watchlist
-    watchlist = Listing.objects.filter(pk__in=(Watchlist.objects.filter(user=request.user).values_list('listing')), is_active=True)
+    # Query active listings against the current user's watchlist
+    watchlist = Listing.objects.filter(is_active=True, id__in=Watchlist.objects.filter(user=request.user))
     return render(request, "auctions/watchlist.html", {'listings': watchlist})
 
 
@@ -177,7 +169,7 @@ def end_listing(request, id):
         listing.save()
 
         # Go back to auctions list
-        return redirect(reverse("index"))
+        return view_listing(request, id)
     
     # If feeling funky redirect back to auctions list
     else:
@@ -190,13 +182,12 @@ def post_comment(request, id):
     # Getting here via comment form submit
     if request.method == "POST":
         listing = Listing.objects.get(pk=id)
-        comment = request.POST['comment']
 
         # Create new comment object if comment exists
-        if comment != "":
+        if request.POST['comment'] != "":
             Comment.objects.create(
                     listing = listing,
-                    comment = comment,
+                    comment = request.POST['comment'],
                     author = request.user
                     )
         
@@ -237,38 +228,29 @@ def watchlist_remove(request, id):
 @login_required
 def bid(request, id):
 
+    # Get the listing object and the posted bid
     if request.method == "POST":
         listing = Listing.objects.get(pk=id)
         posted_bid = request.POST['bid']
 
+        # Check if bid value is numeric
         try:
             posted_bid = float(posted_bid)
         except ValueError:
             return render(request, "auctions/error.html", {'error': 'Invalid bid, please place a valid bid!'})
 
-        if listing in Listing.objects.filter(pk__in=(Bid.objects.filter(listing=listing).values_list('listing'))):
-            bid = Bid.objects.get(listing=listing)
-            if posted_bid > bid.bid:
-                bid.bid = posted_bid
-                bid.bidder = request.user
-                bid.save()
-                listing.price = posted_bid
-                listing.save()
-                return view_listing(request, id)
-            else:
-                return render(request, "auctions/error.html", {'error': 'Bid value too low, please place a higher bid!'})
+        # Check if bid value is higher than
+        if posted_bid <= listing.price:
+            return render(request, "auctions/error.html", {'error': 'Bid value too low, please place a higher bid!'})
         else:
-            if posted_bid > listing.price:
-                Bid.objects.create(
-                    listing = listing,
-                    bidder = request.user,
-                    bid = posted_bid
-                )
-                listing.price = posted_bid
-                listing.save()
-                return view_listing(request, id)
-            else:
-                return render(request, "auctions/error.html", {'error': 'Bid value too low, please place a higher bid!'})
+            Bid.objects.update_or_create(
+                listing = listing,
+                bidder = request.user
+            )
+            listing.price = posted_bid
+            listing.save()
+            return view_listing(request, id)
+
 
 
 def categories(request):
