@@ -13,3 +13,6 @@ It requires the implementation of a auctions-like application in Django. The apl
  - on the listing page you should be able to bid and end the auction if you are the original owner.
 
 Also the data needs to be accesible via the [Django admin](https://docs.djangoproject.com/en/4.1/ref/contrib/admin/) interface.
+
+## Final words
+The project is hard if you are learning Django by doing it, especially if you don't have a programmer background (like me).  Just keep at it, it only gets harder :)
